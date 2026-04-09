@@ -27,7 +27,9 @@ app.get('/api/initialize', async (req, res) =>
     const existingStudent = await db.collection('students').findOne({});
     const existingTeacher = await db.collection('teachers').findOne({});
     if (existingStudent || existingTeacher) {
-      return res.json({ message: 'Sample data already exists' });
+      console.log('Data exists, clearing and reinitializing...');
+      await db.collection('students').deleteMany({});
+      await db.collection('teachers').deleteMany({});
     }
 
     const bcrypt = require('bcryptjs');

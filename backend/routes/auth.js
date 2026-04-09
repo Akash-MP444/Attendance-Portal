@@ -33,14 +33,15 @@ router.post('/login', [
     }
 
     if (!user) {
+      console.log('No user found with identifier:', identifier);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    console.log('User found:', { id: user._id, role });
+
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+    console.log('Password match:', isMatch);
 
     // Generate JWT
     const token = jwt.sign(

@@ -63,6 +63,11 @@ router.put('/:id/attendance', auth, [
 
     const { subject, attendedClasses, totalClasses } = req.body;
 
+    // Check if teacher teaches this subject
+    if (!req.user.subjects.includes(subject)) {
+      return res.status(403).json({ message: 'You do not teach this subject' });
+    }
+
     const db = getDB();
     const student = await db.collection('students').findOne({ studentId: req.params.id });
     if (!student) {

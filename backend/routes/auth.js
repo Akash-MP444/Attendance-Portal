@@ -3,16 +3,22 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getDB } = require('../db');
 const auth = require('../middleware/auth');
+const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
 
 // Login route for both students and teachers
-router.post('/login', async (req, res) => {
+router.post('/login', [
+  body('identifier').notEmpty().withMessage('Identifier is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
+], async (req, res) => {
   try {
-    const { identifier, password } = req.body; // identifier can be studentId or teacherId
-    if (!identifier || !password) {
-      return res.status(400).json({ message: 'Please provide identifier and password' });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
+
+    const { identifier, password } = req.body;
 
     const db = getDB();
 

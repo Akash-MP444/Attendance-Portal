@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDB } = require('../db');
 const auth = require('../middleware/auth');
+const { body, param, validationResult } = require('express-validator');
 
 const router = express.Router();
 
@@ -44,16 +45,23 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Update attendance (for teachers)
-router.put('/:id/attendance', auth, async (req, res) => {
+router.put('/:id/attendance', auth, [
+  param('id').notEmpty().withMessage('Student ID is required'),
+  body('subject').notEmpty().withMessage('Subject is required'),
+  body('attendedClasses').isInt({ min: 0 }).withMessage('Attended classes must be a non-negative integer'),
+  body('totalClasses').isInt({ min: 1 }).withMessage('Total classes must be a positive integer')
+], async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     if (req.user.role !== 'teacher') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     const { subject, attendedClasses, totalClasses } = req.body;
-    if (!subject || attendedClasses === undefined || totalClasses === undefined) {
-      return res.status(400).json({ message: 'Please provide subject, attendedClasses, and totalClasses' });
-    }
 
     const db = getDB();
     const student = await db.collection('students').findOne({ studentId: req.params.id });
@@ -76,6 +84,60 @@ router.put('/:id/attendance', auth, async (req, res) => {
     );
 
     res.json({ message: 'Attendance updated successfully', attendance: student.attendance });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Bulk update attendance for multiple students (for teachers)
+router.put('/bulk-attendance', auth, [
+  body('subject').notEmpty().withMessage('Subject is required'),
+  body('updates').isArray({ min: 1 }).withMessage('Updates must be an array with at least one item'),
+  body('updates.*.studentId').notEmpty().withMessage('Student ID is required for each update'),
+  body('updates.*.attendedClasses').isInt({ min: 0 }).withMessage('Attended classes must be a non-negative integer'),
+  body('updates.*.totalClasses').isInt({ min: 1 }).withMessage('Total classes must be a positive integer')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    if (req.user.role !== 'teacher') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const { subject, updates } = req.body;
+    const db = getDB();
+
+    const results = [];
+    for (const update of updates) {
+      const { studentId, attendedClasses, totalClasses } = update;
+      const student = await db.collection('students').findOne({ studentId });
+      if (!student) {
+        results.push({ studentId, success: false, message: 'Student not found' });
+        continue;
+      }
+
+      const attendanceIndex = student.attendance.findIndex(a => a.subject === subject);
+      if (attendanceIndex === -1) {
+        results.push({ studentId, success: false, message: 'Subject not found in student attendance' });
+        continue;
+      }
+
+      student.attendance[attendanceIndex].attendedClasses = attendedClasses;
+      student.attendance[attendanceIndex].totalClasses = totalClasses;
+      student.attendance[attendanceIndex].percentage = parseFloat(((attendedClasses / totalClasses) * 100).toFixed(2));
+
+      await db.collection('students').updateOne(
+        { studentId },
+        { $set: { attendance: student.attendance, updatedAt: new Date() } }
+      );
+
+      results.push({ studentId, success: true, attendance: student.attendance.find(a => a.subject === subject) });
+    }
+
+    res.json({ message: 'Bulk attendance update completed', results });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

@@ -6,9 +6,12 @@ A comprehensive student attendance management system built with Node.js, Express
 
 - **Student Management**: Track student attendance across multiple subjects
 - **Teacher Dashboard**: View and update student attendance records
+- **Bulk Attendance Updates**: Update attendance for multiple students at once
 - **Authentication**: Secure JWT-based authentication for students and teachers
+- **Input Validation**: Comprehensive validation for all API inputs
 - **Database Seeding**: Initialize the database with sample data
 - **RESTful API**: Clean and intuitive API endpoints
+- **Role-based Access Control**: Proper permissions for different user types
 
 ## Tech Stack
 
@@ -73,21 +76,54 @@ A comprehensive student attendance management system built with Node.js, Express
 - `GET /api/students` - Get all students (teachers only)
 - `GET /api/students/:id` - Get student by ID
 - `PUT /api/students/:id/attendance` - Update student attendance (teachers only)
+- `PUT /api/students/bulk-attendance` - Bulk update attendance for multiple students (teachers only)
 
 ### Utilities
 - `GET /api/initialize` - Initialize database with sample data
 - `GET /api/health` - Health check
 
-## Sample Data
+## API Response Format
 
-After starting the server, visit `http://localhost:5000/api/initialize` to populate the database with:
-- 30 sample students
-- 3 sample teachers
-- Attendance data for 5 subjects
+All API responses follow a consistent format:
 
-### Sample Login Credentials
-- **Student**: ID: `2023001`, Password: `password123`
-- **Teacher**: ID: `T001`, Password: `password123`
+### Success Response
+```json
+{
+  "message": "Operation successful",
+  "data": { ... }
+}
+```
+
+### Error Response
+```json
+{
+  "message": "Error description",
+  "errors": [
+    {
+      "msg": "Validation error message",
+      "param": "field_name",
+      "location": "body"
+    }
+  ]
+}
+```
+
+## Input Validation
+
+The API includes comprehensive input validation:
+- Required fields are checked
+- Data types are validated (strings, integers)
+- Passwords must be at least 6 characters
+- Attendance values must be non-negative integers
+- Bulk operations validate array structures
+
+## Error Handling
+
+- **400 Bad Request**: Invalid input data
+- **401 Unauthorized**: Missing or invalid authentication
+- **403 Forbidden**: Insufficient permissions
+- **404 Not Found**: Resource not found
+- **500 Internal Server Error**: Server-side errors
 
 ## Project Structure
 
@@ -99,9 +135,12 @@ backend/
 │   └── auth.js           # Authentication middleware
 ├── routes/
 │   ├── auth.js           # Authentication routes
-│   └── students.js       # Student management routes
+│   ├── students.js       # Student management routes
+│   └── teachers.js       # Teacher-specific routes
 ├── package.json          # Dependencies and scripts
-└── .env                  # Environment variables
+├── .env                  # Environment variables (not in repo)
+├── .gitignore            # Git ignore rules
+└── README.md             # This file
 ```
 
 ## Contributing

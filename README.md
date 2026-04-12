@@ -152,5 +152,5 @@ backend/
 5. Open a Pull Request
 
 ---
-👤 Author
+## 👤 Author
 **Akash MP**

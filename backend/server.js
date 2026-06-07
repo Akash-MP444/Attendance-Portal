@@ -1,12 +1,51 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const { connectDB, getDB } = require('./db');
+const config = require('./config');
+const requestLogger = require('./middleware/requestLogger');
+const rateLimit = require('./middleware/rateLimit');
+const errorHandler = require('./middleware/errorHandler');
+
 require('dotenv').config();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Basic security headers
+app.use(helmet());
+
+// Request logging
+app.use(requestLogger);
+
+// Rate limiting
+app.use(rateLimit);
+
+// CORS - allow localhost dev origins and configurable ALLOWED_ORIGIN in prod
+const allowedOrigins = [process.env.ALLOWED_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'].filter(Boolean);
+const corsOptions = {
+  origin: function(origin, callback) {
+    // allow requests with no origin (like curl, mobile apps)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+    // otherwise reject
+    return callback(new Error('Not allowed by CORS'), false);
+  },
+  optionsSuccessStatus: 200
+};
+app.use((req, res, next) => {
+  cors(corsOptions)(req, res, err => {
+    if (err) {
+      // log and continue so developer sees CORS issues
+      console.warn('CORS error:', err.message);
+      return res.status(403).json({ success: false, message: 'CORS Error' });
+    }
+    next();
+  });
+});
+
+// Body parser
 app.use(express.json());
 
 // Connect MongoDB
@@ -16,6 +55,7 @@ connectDB();
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/teachers', require('./routes/teachers'));
+app.use('/api/analytics', require('./routes/analytics'));
 
 // --- AUTO DATABASE SEED ROUTE --- //
 app.get('/api/initialize', async (req, res) =>
@@ -122,10 +162,35 @@ app.get('/api/health', (req, res) => {
   res.json({ message: '✅ Server is running and healthy!' });
 });
 
-// Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+// Centralized error handler
+app.use(errorHandler);
+
+// Start Server with error handling for address-in-use
+const PORT = config.port || 5000;
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📦 MongoDB connected and ready`);
   console.log(`👉 Initialize sample data at: POST http://localhost:${PORT}/api/initialize`);
+});
+
+server.on('error', (err) => {
+  if (err && err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Ensure no other server is running on this port.`);
+    process.exit(1);
+  }
+  console.error('Server error:', err);
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down server...');
+  try {
+    server.close(() => {
+      console.log('HTTP server closed.');
+      process.exit(0);
+    });
+  } catch (e) {
+    console.error('Error during shutdown', e);
+    process.exit(1);
+  }
 });

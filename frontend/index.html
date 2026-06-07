@@ -173,7 +173,8 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:5000/api';
+        // Use current hostname so frontend works with localhost or 127.0.0.1
+        const API_BASE = `${location.protocol}//${location.hostname}:5000/api`;
         let currentUser = null;
         let currentToken = null;
 
@@ -186,26 +187,35 @@
             try {
                 const response = await fetch(`${API_BASE}/auth/login`, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ identifier, password })
                 });
 
-                const data = await response.json();
+                // Try to parse response body safely
+                let data = null;
+                try {
+                    data = await response.json();
+                } catch (parseErr) {
+                    console.error('Failed to parse login response JSON', parseErr);
+                }
 
                 if (response.ok) {
-                    currentToken = data.token;
-                    currentUser = data.user;
+                    currentToken = data && data.token;
+                    currentUser = data && data.user;
                     showMessage('loginMessage', 'Login successful!', 'success');
                     setTimeout(() => {
                         showDashboard();
                     }, 1000);
                 } else {
-                    showMessage('loginMessage', data.message || 'Login failed', 'error');
+                    const msg = (data && data.message) || `Login failed (status ${response.status})`;
+                    showMessage('loginMessage', msg, 'error');
                 }
             } catch (error) {
-                showMessage('loginMessage', 'Network error. Make sure backend is running.', 'error');
+                console.error('Login network/fetch error:', error);
+                showMessage('loginMessage', `Network error: ${error.message}`, 'error');
             }
         });
 
@@ -279,7 +289,8 @@
                     showMessage('teacherMessage', students.message || 'Failed to load students', 'error');
                 }
             } catch (error) {
-                showMessage('teacherMessage', 'Network error', 'error');
+                console.error('Load students error:', error);
+                showMessage('teacherMessage', `Network error: ${error.message}`, 'error');
             }
         }
 
@@ -383,7 +394,8 @@
                     showMessage('teacherMessage', data.message || 'Update failed', 'error');
                 }
             } catch (error) {
-                showMessage('teacherMessage', 'Network error', 'error');
+                console.error('Update attendance error:', error);
+                showMessage('teacherMessage', `Network error: ${error.message}`, 'error');
             }
         }
 
@@ -417,7 +429,8 @@
                     showMessage('loginMessage', 'Backend server not running. Please start the backend first.', 'error');
                 }
             } catch (error) {
-                showMessage('loginMessage', 'Cannot connect to backend. Make sure it\'s running on port 5000.', 'error');
+                console.error('Health check failed:', error);
+                showMessage('loginMessage', `Cannot connect to backend: ${error.message}`, 'error');
             }
         });
     </script>

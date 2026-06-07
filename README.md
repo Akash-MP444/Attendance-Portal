@@ -1,156 +1,290 @@
-# Attendance Portal
+# 🎓 Attendance Portal
 
-A comprehensive student attendance management system built with Node.js, Express, and MongoDB.
+A full-stack Attendance Management System built using **Node.js, Express.js, MongoDB, JWT Authentication, and Role-Based Access Control**. The system enables teachers to manage attendance records efficiently while allowing students to view their attendance information securely.
 
-## Features
+---
 
-- **Student Management**: Track student attendance across multiple subjects
-- **Teacher Dashboard**: View and update student attendance records
-- **Bulk Attendance Updates**: Update attendance for multiple students at once
-- **Authentication**: Secure JWT-based authentication for students and teachers
-- **Input Validation**: Comprehensive validation for all API inputs
-- **Database Seeding**: Initialize the database with sample data
-- **RESTful API**: Clean and intuitive API endpoints
-- **Role-based Access Control**: Proper permissions for different user types
+## 🚀 Features
 
-## Tech Stack
+### Authentication & Security
 
-- **Backend**: Node.js, Express.js
-- **Database**: MongoDB
-- **Authentication**: JWT (JSON Web Tokens)
-- **Password Hashing**: bcryptjs
-- **CORS**: Enabled for cross-origin requests
+* JWT-based Authentication
+* Secure Password Hashing using bcryptjs
+* Protected API Routes
+* Role-Based Access Control (RBAC)
+* Input Validation and Error Handling
 
-## Getting Started
+### Student Features
 
-### Prerequisites
+* Secure Login
+* View Attendance Details
+* View Attendance Percentage
+* Access Personal Profile
 
-- Node.js (v14 or higher)
-- MongoDB (local or cloud instance)
-- npm or yarn
+### Teacher Features
 
-### Installation
+* Secure Login
+* View All Students
+* Update Student Attendance
+* Bulk Attendance Updates
+* Manage Attendance Records
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Akash-MP444/Attendance-Portal.git
-   cd Attendance-Portal
-   ```
+### System Features
 
-2. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
+* MongoDB Database Integration
+* RESTful API Architecture
+* Database Seeding with Sample Data
+* Centralized Error Handling
+* CORS Support
+* Environment Variable Configuration
 
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
+---
 
-4. Set up environment variables:
-   Create a `.env` file in the backend directory with:
-   ```
-   MONGODB_URI=mongodb://localhost:27017/student_attendance
-   JWT_SECRET=your-super-secret-key-here
-   PORT=5000
-   ```
+## 🛠️ Tech Stack
 
-5. Start MongoDB service (if running locally)
+| Technology | Purpose                   |
+| ---------- | ------------------------- |
+| Node.js    | Backend Runtime           |
+| Express.js | API Framework             |
+| MongoDB    | Database                  |
+| JWT        | Authentication            |
+| bcryptjs   | Password Hashing          |
+| CORS       | Cross-Origin Requests     |
+| dotenv     | Environment Configuration |
 
-6. Run the server:
-   ```bash
-   npm start
-   ```
-   Or for development with auto-restart:
-   ```bash
-   npm run dev
-   ```
+---
 
-## API Endpoints
+## 📂 Project Structure
+
+```text
+Attendance-Portal/
+│
+├── backend/
+│   ├── db.js
+│   ├── server.js
+│   │
+│   ├── middleware/
+│   │   └── auth.js
+│   │
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── students.js
+│   │   └── teachers.js
+│   │
+│   ├── package.json
+│   ├── .env
+│   └── README.md
+│
+└── frontend/
+    └── index.html
+```
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/Akash-MP444/Attendance-Portal.git
+cd Attendance-Portal
+```
+
+---
+
+### 2. Install Backend Dependencies
+
+```bash
+cd backend
+npm install
+```
+
+---
+
+### 3. Configure Environment Variables
+
+Create a `.env` file inside the backend directory:
+
+```env
+MONGODB_URI=mongodb://localhost:27017/student_attendance
+JWT_SECRET=your-secret-key
+PORT=5000
+```
+
+---
+
+### 4. Start MongoDB
+
+Ensure MongoDB service is running.
+
+---
+
+### 5. Start Backend Server
+
+Development Mode:
+
+```bash
+npm run dev
+```
+
+Production Mode:
+
+```bash
+npm start
+```
+
+Expected Output:
+
+```text
+🚀 Server running on port 5000
+📦 MongoDB connected and ready
+```
+
+---
+
+### 6. Initialize Sample Data
+
+Open:
+
+```text
+http://localhost:5000/api/initialize
+```
+
+or send:
+
+```bash
+curl -X POST http://localhost:5000/api/initialize
+```
+
+---
+
+### 7. Start Frontend
+
+⚠️ Do NOT open `index.html` directly.
+
+Serve the frontend using a local server:
+
+```bash
+cd frontend
+python -m http.server 3000
+```
+
+or
+
+```bash
+npx serve . -l 3000
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## 🔑 Demo Credentials
+
+### Student Login
+
+```text
+Student ID: 2023001
+Password: password123
+```
+
+### Teacher Login
+
+```text
+Teacher ID: T001
+Password: password123
+```
+
+---
+
+## 📡 API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - Login for students and teachers
-- `GET /api/auth/profile` - Get current user profile
+
+| Method | Endpoint          | Description          |
+| ------ | ----------------- | -------------------- |
+| POST   | /api/auth/login   | User Login           |
+| GET    | /api/auth/profile | Current User Profile |
+
+---
 
 ### Students
-- `GET /api/students` - Get all students (teachers only)
-- `GET /api/students/:id` - Get student by ID
-- `PUT /api/students/:id/attendance` - Update student attendance (teachers only)
-- `PUT /api/students/bulk-attendance` - Bulk update attendance for multiple students (teachers only)
+
+| Method | Endpoint                      | Description            |
+| ------ | ----------------------------- | ---------------------- |
+| GET    | /api/students                 | Get All Students       |
+| GET    | /api/students/:id             | Get Student            |
+| PUT    | /api/students/:id/attendance  | Update Attendance      |
+| PUT    | /api/students/bulk-attendance | Bulk Attendance Update |
+
+---
 
 ### Utilities
-- `GET /api/initialize` - Initialize database with sample data
-- `GET /api/health` - Health check
 
-## API Response Format
+| Method | Endpoint        | Description      |
+| ------ | --------------- | ---------------- |
+| GET    | /api/health     | Health Check     |
+| POST   | /api/initialize | Seed Sample Data |
 
-All API responses follow a consistent format:
+---
+
+## ✅ API Response Format
 
 ### Success Response
+
 ```json
 {
   "message": "Operation successful",
-  "data": { ... }
+  "data": {}
 }
 ```
 
 ### Error Response
+
 ```json
 {
   "message": "Error description",
-  "errors": [
-    {
-      "msg": "Validation error message",
-      "param": "field_name",
-      "location": "body"
-    }
-  ]
+  "errors": []
 }
 ```
 
-## Input Validation
+---
 
-The API includes comprehensive input validation:
-- Required fields are checked
-- Data types are validated (strings, integers)
-- Passwords must be at least 6 characters
-- Attendance values must be non-negative integers
-- Bulk operations validate array structures
+## 🔒 Security Features
 
-## Error Handling
-
-- **400 Bad Request**: Invalid input data
-- **401 Unauthorized**: Missing or invalid authentication
-- **403 Forbidden**: Insufficient permissions
-- **404 Not Found**: Resource not found
-- **500 Internal Server Error**: Server-side errors
-
-## Project Structure
-
-```
-backend/
-├── db.js                 # Database connection
-├── server.js             # Main server file
-├── middleware/
-│   └── auth.js           # Authentication middleware
-├── routes/
-│   ├── auth.js           # Authentication routes
-│   ├── students.js       # Student management routes
-│   └── teachers.js       # Teacher-specific routes
-├── package.json          # Dependencies and scripts
-├── .env                  # Environment variables (not in repo)
-├── .gitignore            # Git ignore rules
-└── README.md             # This file
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
+* JWT Authentication
+* Password Hashing with bcryptjs
+* Role-Based Authorization
+* Protected Routes
+* Input Validation
+* Environment Variable Protection
 
 ---
-## 👤 Author
+
+## 📈 Future Improvements
+
+* Attendance Analytics Dashboard
+* Subject-wise Attendance Reports
+* Charts and Data Visualization
+* CSV / Excel Export
+* Admin Dashboard
+* Email Notifications
+* QR Code Attendance System
+* Docker Support
+* Automated Testing
+* CI/CD Pipeline
+
+---
+
+## 👨‍💻 Author
+
 **Akash MP**
+
+GitHub: https://github.com/Akash-MP444
+
+---
+

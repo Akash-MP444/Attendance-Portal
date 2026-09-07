@@ -86,7 +86,7 @@ Attendance-Portal/
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/Akash-MP444/Attendance-Portal.git
+git clone https://github.com/Akash-MP19/Attendance-Portal.git
 cd Attendance-Portal
 ```
 
@@ -284,7 +284,7 @@ Password: password123
 
 **Akash MP**
 
-GitHub: https://github.com/Akash-MP444
+GitHub: https://github.com/Akash-MP19
 
 ---
 

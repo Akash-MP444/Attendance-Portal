@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const { connectDB, getDB } = require('./db');
@@ -11,8 +12,11 @@ require('dotenv').config();
 
 const app = express();
 
-// Basic security headers
-app.use(helmet());
+// Basic security headers (configured to allow inline scripts/styles and static assets in dev)
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // Request logging
 app.use(requestLogger);
@@ -20,26 +24,29 @@ app.use(requestLogger);
 // Rate limiting
 app.use(rateLimit);
 
-// CORS - allow localhost dev origins and configurable ALLOWED_ORIGIN in prod
+// CORS - allow dev origins (localhost, 127.0.0.1 on any port, file:// 'null' origin) and custom ALLOWED_ORIGIN
 const allowedOrigins = [process.env.ALLOWED_ORIGIN, 'http://localhost:3000', 'http://127.0.0.1:3000'].filter(Boolean);
+const devOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
 const corsOptions = {
   origin: function(origin, callback) {
-    // allow requests with no origin (like curl, mobile apps)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // allow requests with no origin or 'null' (like curl, mobile apps, file://)
+    if (!origin || origin === 'null') return callback(null, true);
+    if (allowedOrigins.includes(origin) || devOriginPattern.test(origin)) {
       return callback(null, true);
     }
     // otherwise reject
     return callback(new Error('Not allowed by CORS'), false);
   },
+  credentials: true,
   optionsSuccessStatus: 200
 };
+
 app.use((req, res, next) => {
   cors(corsOptions)(req, res, err => {
     if (err) {
-      // log and continue so developer sees CORS issues
       console.warn('CORS error:', err.message);
-      return res.status(403).json({ success: false, message: 'CORS Error' });
+      return res.status(403).json({ success: false, message: 'CORS Error: Origin not allowed' });
     }
     next();
   });
@@ -47,6 +54,9 @@ app.use((req, res, next) => {
 
 // Body parser
 app.use(express.json());
+
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Connect MongoDB
 connectDB();
@@ -57,8 +67,8 @@ app.use('/api/students', require('./routes/students'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/analytics', require('./routes/analytics'));
 
-// --- AUTO DATABASE SEED ROUTE --- //
-app.get('/api/initialize', async (req, res) =>
+// Handler for database initialization
+const handleInitialize = async (req, res) =>
 {
   try {
     const db = getDB();
@@ -155,7 +165,11 @@ app.get('/api/initialize', async (req, res) =>
     console.error(error);
     res.status(500).json({ message: 'Error initializing data', error: error.message });
   }
-});
+};
+
+// Database seed routes (supports both GET and POST)
+app.get('/api/initialize', handleInitialize);
+app.post('/api/initialize', handleInitialize);
 
 // Health Check Route
 app.get('/api/health', (req, res) => {
@@ -170,7 +184,8 @@ const PORT = config.port || 5000;
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📦 MongoDB connected and ready`);
-  console.log(`👉 Initialize sample data at: POST http://localhost:${PORT}/api/initialize`);
+  console.log(`👉 Initialize sample data at: GET/POST http://localhost:${PORT}/api/initialize`);
+  console.log(`💻 Web Portal available at: http://localhost:${PORT}`);
 });
 
 server.on('error', (err) => {

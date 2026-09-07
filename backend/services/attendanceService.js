@@ -30,8 +30,17 @@ async function getStudentSummary(studentId) {
   const db = getDB();
   const student = await db.collection('students').findOne({ studentId }, { projection: { password: 0 } });
   if (!student) return null;
-  const overall = student.attendance.reduce((acc, cur) => acc + cur.percentage, 0) / (student.attendance.length || 1);
-  return { studentId: student.studentId, name: student.name, class: student.class, overallPercentage: parseFloat(overall.toFixed(2)), attendance: student.attendance };
+  const attendance = Array.isArray(student.attendance) ? student.attendance : [];
+  const overall = attendance.length > 0 
+    ? attendance.reduce((acc, cur) => acc + (cur.percentage || 0), 0) / attendance.length 
+    : 0;
+  return { 
+    studentId: student.studentId, 
+    name: student.name, 
+    class: student.class, 
+    overallPercentage: parseFloat(overall.toFixed(2)), 
+    attendance 
+  };
 }
 
 module.exports = { getSubjectAverages, getLowAttendance, getStudentSummary };

@@ -23,6 +23,11 @@ async function lowAttendance(req, res, next) {
 async function studentSummary(req, res, next) {
   try {
     const studentId = req.params.studentId;
+    // Students can only view their own summary, teachers/admins can view any
+    if (req.user.role === 'student' && req.user.studentId !== studentId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
     const summary = await attendanceService.getStudentSummary(studentId);
     if (!summary) return res.status(404).json({ success: false, message: 'Student not found' });
     res.json({ success: true, data: summary });

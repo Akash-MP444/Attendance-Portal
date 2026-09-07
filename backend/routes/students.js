@@ -63,8 +63,12 @@ router.put('/:id/attendance', auth, [
 
     const { subject, attendedClasses, totalClasses } = req.body;
 
+    if (attendedClasses > totalClasses) {
+      return res.status(400).json({ message: 'Attended classes cannot exceed total classes' });
+    }
+
     // Check if teacher teaches this subject
-    if (!req.user.subjects.includes(subject)) {
+    if (!req.user.subjects || !req.user.subjects.includes(subject)) {
       return res.status(403).json({ message: 'You do not teach this subject' });
     }
 
@@ -113,11 +117,23 @@ router.put('/bulk-attendance', auth, [
     }
 
     const { subject, updates } = req.body;
+
+    // Check if teacher teaches this subject
+    if (!req.user.subjects || !req.user.subjects.includes(subject)) {
+      return res.status(403).json({ message: 'You do not teach this subject' });
+    }
+
     const db = getDB();
 
     const results = [];
     for (const update of updates) {
       const { studentId, attendedClasses, totalClasses } = update;
+
+      if (attendedClasses > totalClasses) {
+        results.push({ studentId, success: false, message: 'Attended classes cannot exceed total classes' });
+        continue;
+      }
+
       const student = await db.collection('students').findOne({ studentId });
       if (!student) {
         results.push({ studentId, success: false, message: 'Student not found' });

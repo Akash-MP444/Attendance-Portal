@@ -57,12 +57,12 @@ router.get('/stats/:subject', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    if (!req.user.subjects.includes(req.params.subject)) {
+    if (!req.user.subjects || !req.user.subjects.includes(req.params.subject)) {
       return res.status(403).json({ message: 'You do not teach this subject' });
     }
 
     const db = getDB();
-    const students = await db.collection('students').find({}).toArray();
+    const students = await db.collection('students').find({}, { projection: { password: 0 } }).toArray();
 
     const attendanceData = students.map(student => {
       const subjectAttendance = student.attendance.find(a => a.subject === req.params.subject);

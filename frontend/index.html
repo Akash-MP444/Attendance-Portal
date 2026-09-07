@@ -24,7 +24,8 @@
             border-radius: 10px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
+            position: relative;
         }
         .login-form, .dashboard {
             display: none;
@@ -173,15 +174,24 @@
     </div>
 
     <script>
-        // Use current hostname so frontend works with localhost or 127.0.0.1
-        const API_BASE = `${location.protocol}//${location.hostname}:5000/api`;
+        // Dynamically determine API base URL so frontend works under file://, backend static server, or dev servers
+        const API_BASE = (() => {
+            if (location.protocol === 'file:' || !location.hostname) {
+                return 'http://localhost:5000/api';
+            }
+            if (location.port === '5000') {
+                return '/api';
+            }
+            return `${location.protocol}//${location.hostname}:5000/api`;
+        })();
+
         let currentUser = null;
         let currentToken = null;
 
         // Login functionality
         document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const identifier = document.getElementById('identifier').value;
+            const identifier = document.getElementById('identifier').value.trim();
             const password = document.getElementById('password').value;
 
             try {
@@ -210,7 +220,7 @@
                         showDashboard();
                     }, 1000);
                 } else {
-                    const msg = (data && data.message) || `Login failed (status ${response.status})`;
+                    const msg = (data && (data.message || (data.errors && data.errors[0]?.msg))) || `Login failed (status ${response.status})`;
                     showMessage('loginMessage', msg, 'error');
                 }
             } catch (error) {
@@ -234,15 +244,21 @@
         // Load student data
         async function loadStudentData() {
             document.getElementById('studentInfo').innerHTML = `
-                <p><strong>Name:</strong> ${currentUser.name}</p>
-                <p><strong>ID:</strong> ${currentUser.studentId}</p>
-                <p><strong>Class:</strong> ${currentUser.class}</p>
+                <p><strong>Name:</strong> ${currentUser.name || 'Student'}</p>
+                <p><strong>ID:</strong> ${currentUser.studentId || ''}</p>
+                <p><strong>Class:</strong> ${currentUser.class || 'N/A'}</p>
             `;
 
             const tbody = document.getElementById('attendanceTable');
             tbody.innerHTML = '';
 
-            currentUser.attendance.forEach(subject => {
+            const attendanceRecords = Array.isArray(currentUser.attendance) ? currentUser.attendance : [];
+            if (attendanceRecords.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No attendance records found.</td></tr>';
+                return;
+            }
+
+            attendanceRecords.forEach(subject => {
                 const row = document.createElement('tr');
                 const percentageClass = subject.percentage >= 75 ? 'high' :
                                       subject.percentage >= 50 ? 'medium' : 'low';
@@ -259,11 +275,22 @@
 
         // Load teacher data
         function loadTeacherData() {
+            const subjects = Array.isArray(currentUser.subjects) ? currentUser.subjects : [];
             document.getElementById('teacherInfo').innerHTML = `
-                <p><strong>Name:</strong> ${currentUser.name}</p>
-                <p><strong>ID:</strong> ${currentUser.teacherId}</p>
-                <p><strong>Subjects:</strong> ${currentUser.subjects.join(', ')}</p>
+                <p><strong>Name:</strong> ${currentUser.name || 'Teacher'}</p>
+                <p><strong>ID:</strong> ${currentUser.teacherId || ''}</p>
+                <p><strong>Subjects:</strong> ${subjects.join(', ') || 'None assigned'}</p>
             `;
+
+            // Populate subject dropdown with assigned subjects
+            const select = document.getElementById('subjectSelect');
+            select.innerHTML = '<option value="">Choose a subject...</option>';
+            subjects.forEach(sub => {
+                const opt = document.createElement('option');
+                opt.value = sub;
+                opt.textContent = sub;
+                select.appendChild(opt);
+            });
         }
 
         // Load students for selected subject
